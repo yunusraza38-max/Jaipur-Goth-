@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Delay — DD-3 / DD-3T / DD-5 / DD-8 Pro Vocal Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-studio: #060913;
+            --panel-bg: #0f172a;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top center, #111c38 0%, #060913 65%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .rack-module {
+            background: linear-gradient(165deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.92) 100%);
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+        }
+        .lcd-screen {
+            background: linear-gradient(180deg, #030712 0%, #091224 100%);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.85), 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        /* 3D Hardware Rotary Knob */
+        .knob-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            touch-action: none;
+        }
+        .rotary-knob {
+            width: 58px;
+            height: 58px;
+            border-radius: 9999px;
+            position: relative;
+            cursor: ns-resize;
+            background: conic-gradient(from 225deg, var(--knob-color, #38bdf8) var(--knob-deg, 135deg), #1e293b 0deg);
+            padding: 4px;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7), 0 0 14px var(--knob-glow, rgba(56, 189, 248, 0.25));
+            transition: transform 0.08s ease;
+        }
+        .rotary-knob:active {
+            transform: scale(0.96);
+        }
+        .knob-cap {
+            width: 100%;
+            height: 100%;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 32% 28%, #334155 0%, #0f172a 75%, #020617 100%);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.12);
+        }
+        .knob-pointer {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            width: 3px;
+            height: 12px;
+            margin-left: -1.5px;
+            border-radius: 99px;
+            background: var(--knob-color, #38bdf8);
+            box-shadow: 0 0 6px var(--knob-color, #38bdf8);
+            transform-origin: 50% 21px;
+        }
+
+        /* Custom Range Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            border: 2px solid #f8fafc;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+        }
+
+        /* Vertical LED Meter Segments */
+        .v-led {
+            width: 10px;
+            height: 3.5px;
+            border-radius: 1.5px;
+            background: #1e293b;
+            transition: background-color 0.05s ease, box-shadow 0.05s ease;
+        }
+        .v-led.on-green {
+            background: #10b981;
+            box-shadow: 0 0 5px #10b981;
+        }
+        .v-led.on-amber {
+            background: #f59e0b;
+            box-shadow: 0 0 5px #f59e0b;
+        }
+        .v-led.on-red {
+            background: #ef4444;
+            box-shadow: 0 0 6px #ef4444;
+        }
+
+        /* Horizontal Swipe Deck Container */
+        .decks-viewport {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            gap: 14px;
+        }
+        .decks-viewport::-webkit-scrollbar {
+            display: none;
+        }
+        .deck-page {
+            flex: 0 0 100%;
+            width: 100%;
+            scroll-snap-align: start;
+        }
+
+        @keyframes pulseRec {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.92); }
+        }
+        .rec-blinking {
+            animation: pulseRec 1s infinite;
+        }
+    </style>
+</head>
+<body class="p-2.5 sm:p-4 flex flex-col items-center">
+
+    <div class="w-full max-w-4xl flex flex-col gap-2.5">
+
+        <!-- TOP COMPACT STUDIO MASTER BAR -->
+        <header class="flex flex-wrap items-center justify-between gap-2 rack-module border border-slate-700/70 rounded-2xl px-3 py-2">
+            <!-- Brand Title -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/25 border border-sky-300/30">
+                    <i class="fa-solid fa-wave-square text-white text-sm"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="text-sm sm:text-base font-black tracking-wider text-white uppercase">Digital Delay</h1>
+                        <span class="px-1.5 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-[9px] font-mono-tech font-bold text-sky-300">DD-8 PRO</span>
+                    </div>
+                    <p id="micStatusLabel" class="text-[10px] font-medium text-slate-400">Mic Disconnected • Tap MIC to start</p>
+                </div>
+            </div>
+
+            <!-- Compact Round Action Controls + Vertical LED Meters -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <!-- Mic Device Selector (Compact) -->
+                <select id="micDeviceSelect" title="Select Microphone" class="hidden sm:block max-w-[125px] bg-slate-900/90 border border-slate-700 text-slate-300 text-[10px] font-semibold rounded-full px-2.5 py-1.5 outline-none focus:border-sky-500">
+                    <option value="">Default Mic</option>
+                </select>
+
+                <!-- MIC Toggle Pill -->
+                <button id="micToggleBtn" title="Connect / Disconnect Mic" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-slate-800/90 border-slate-700 text-slate-300 hover:border-sky-500/60">
+                    <i id="micBtnIcon" class="fa-solid fa-microphone-slash text-slate-400"></i>
+                    <span id="micBtnText">MIC</span>
+                </button>
+
+                <!-- TEST FX Pill (Works even without Mic) -->
+                <button id="testSignalBtn" title="Test Delay & FX Sound" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-amber-500/15 border-amber-500/45 text-amber-300 hover:bg-amber-500/25">
+                    <i class="fa-solid fa-volume-high text-[9px]"></i>
+                    <span>TEST FX</span>
+                </button>
+
+                <!-- MONITOR Toggle Pill -->
+                <button id="monitorToggleBtn" disabled title="Live Monitor (Auto-on with Mic)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-slate-900/70 border-slate-800 text-slate-500 cursor-not-allowed">
+                    <i class="fa-solid fa-headphones"></i>
+                    <span id="monitorBtnText">MON</span>
+                </button>
+
+                <!-- Single REC / STOP Pill -->
+                <button id="recordToggleBtn" title="Record / Stop Master Mix" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25">
+                    <span id="recDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span id="recBtnText">REC</span>
+                </button>
+
+                <!-- Recorded Audio Quick Play & Download (Appears after recording) -->
+                <div id="recordingActions" class="hidden items-center gap-1">
+                    <button id="playRecBtn" title="Play Recording" class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 flex items-center justify-center text-[10px]">
+                        <i id="playRecIcon" class="fa-solid fa-play"></i>
+                    </button>
+                    <a id="downloadRecLink" download="Digital-Delay-Studio.webm" title="Download Recording" class="w-7 h-7 rounded-full bg-sky-500/20 border border-sky-500/50 text-sky-300 flex items-center justify-center text-[10px]">
+                        <i class="fa-solid fa-download"></i>
+                    </a>
+                </div>
+
+                <!-- Vertical IN & OUT LED Meters -->
+                <div class="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-xl px-2 py-1">
+                    <div class="flex flex-col items-center gap-0.5" title="Mic Input Level">
+                        <div id="inLedBar" class="flex flex-col-reverse gap-[2px]"></div>
+                        <span class="text-[8px] font-mono-tech font-bold text-emerald-400">IN</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-0.5" title="Studio Output Level">
+                        <div id="outLedBar" class="flex flex-col-reverse gap-[2px]"></div>
+                        <span class="text-[8px] font-mono-tech font-bold text-sky-400">OUT</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Local file:// Security Banner (Shown automatically if opened directly from file://) -->
+        <div id="insecureContextBanner" class="hidden flex-wrap items-center justify-between gap-2 bg-rose-950/75 border border-rose-500/60 rounded-2xl px-3 py-2 text-xs text-rose-100">
+            <div class="flex items-start gap-2">
+                <i class="fa-solid fa-shield-halved text-rose-400 mt-0.5"></i>
+                <div>
+                    <p class="font-extrabold text-rose-200">Chrome ने लोकल फ़ाइल (file://) पर Mic ब्लॉक किया है!</p>
+                    <p class="text-[11px] text-rose-200/90">Android Chrome सुरक्षा नीति के कारण डाउनलोड की गई <code>file://</code> फ़ाइल में माइक नहीं चलता। माइक चलाने के लिए इसे <b>http://localhost</b> या किसी <b>HTTPS</b> लिंक (जैसे Netlify Drop) पर खोलें—या अभी इफेक्ट्स सुनने के लिए <b>TEST FX</b> दबाएँ।</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HORIZONTAL SCREEN SWITCHER TABS (Syncs with Swipe & Click) -->
+        <nav class="grid grid-cols-3 gap-1.5 bg-slate-950/80 border border-slate-800/90 p-1 rounded-2xl">
+            <button type="button" data-deck-index="0" class="deck-tab-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold tracking-wide transition flex items-center justify-center gap-1.5 bg-sky-500/20 border border-sky-400/60 text-sky-300 shadow-sm">
+                <i class="fa-solid fa-sliders text-sky-400"></i>
+                <span>1. DELAY DECK</span>
+            </button>
+            <button type="button" data-deck-index="1" class="deck-tab-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold tracking-wide transition flex items-center justify-center gap-1.5 border border-transparent text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+                <span>2. AUTO-TUNE & FX</span>
+            </button>
+            <button type="button" data-deck-index="2" class="deck-tab-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold tracking-wide transition flex items-center justify-center gap-1.5 border border-transparent text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-layer-group text-amber-400"></i>
+                <span>3. HARMONIUM LOOP</span>
+            </button>
+        </nav>
+
+        <!-- HORIZONTAL SWIPEABLE 3-SCREEN VIEWPORT -->
+        <main id="decksViewport" class="decks-viewport">
+
+            <!-- ========================================== -->
+            <!-- SCREEN 1: DIGITAL DELAY CORE (DD-3/5/8)    -->
+            <!-- ========================================== -->
+            <section class="deck-page rack-module border border-sky-500/35 rounded-3xl p-3.5 sm:p-4 flex flex-col gap-3.5">
+                <!-- Delay Header & Engine Mode Selector -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
+                        <h2 class="text-xs sm:text-sm font-black tracking-wider uppercase text-sky-300">Digital Delay Engine (DD-3 / DD-3T / DD-5 / DD-8)</h2>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <!-- Quick Preset Pill + Large Preset Screen Button -->
+                        <select id="presetSelect" class="bg-slate-900 border border-sky-500/40 text-sky-200 text-[11px] font-bold rounded-xl px-2.5 py-1.5 outline-none">
+                            <option value="naat_mehfil">🕌 Naat & Ghazal Mehfil</option>
+                            <option value="dd3_crisp">🎛️ DD-3 Crisp Digital</option>
+                            <option value="dd8_warm">🔥 DD-8 Warm Analog</option>
+                            <option value="ping_pong_hall">🎧 Ping-Pong Stereo Hall</option>
+                            <option value="slapback_stage">🎤 Live Stage Slapback</option>
+                            <option value="shimmer_ethereal">✨ Heavenly Shimmer Echo</option>
+                        </select>
+                        <button type="button" onclick="openPresetModal('delay')" title="Open Large Preset Screen" class="px-2.5 py-1.5 rounded-xl bg-sky-500/20 border border-sky-400/50 text-sky-300 text-xs font-extrabold hover:bg-sky-500/30">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LCD Status Strip + Mode & Subdivision -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div class="lcd-screen border border-slate-800 rounded-2xl px-3 py-2 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] font-bold uppercase text-slate-500 block">DELAY TIME / BPM</span>
+                            <span id="lcdTimeReadout" class="font-mono-tech text-sm font-extrabold text-sky-400">420 ms • 143 BPM</span>
+                        </div>
+                        <button type="button" id="tapTempoBtn" class="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[10px] font-black tracking-wider active:scale-95 transition">
+                            TAP TEMPO
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl px-3 py-1.5 flex flex-col justify-center">
+                        <label class="text-[9px] font-bold uppercase text-cyan-400 mb-0.5">DD-8 / DD-5 / DD-3 MODE</label>
+                        <select id="delayModeSelect" class="bg-transparent text-xs font-extrabold text-white outline-none">
+                            <option value="standard" class="bg-slate-900">STANDARD (DD-3 Crisp)</option>
+                            <option value="warm" class="bg-slate-900">WARM (DD-8 Analog Voiced)</option>
+                            <option value="tape" class="bg-slate-900">TAPE ECHO (Naat / Ghazal)</option>
+                            <option value="pingpong" class="bg-slate-900">PING-PONG (Stereo Pan)</option>
+                            <option value="shimmer" class="bg-slate-900">SHIMMER (Octave Air)</option>
+                            <option value="hold" class="bg-slate-900">HOLD / INFINITE REPEAT</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl px-3 py-1.5 flex flex-col justify-center">
+                        <label class="text-[9px] font-bold uppercase text-purple-400 mb-0.5">SUBDIVISION (DD-5 / DD-3T)</label>
+                        <select id="subdivisionSelect" class="bg-transparent text-xs font-extrabold text-white outline-none">
+                            <option value="1" class="bg-slate-900">1/4 Quarter Note (Straight)</option>
+                            <option value="0.75" class="bg-slate-900">Dotted 1/8 (Rhythmic Echo)</option>
+                            <option value="0.5" class="bg-slate-900">1/8 Eighth Note (Fast)</option>
+                            <option value="0.333" class="bg-slate-900">1/8 Triplet (Gallop)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 6 COLOR-CODED 3D ROTARY HARDWARE KNOBS -->
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 py-2 px-2 bg-slate-950/60 border border-slate-800/90 rounded-2xl">
+                    <!-- Knob 1: E.LEVEL -->
+                    <div class="knob-wrapper" data-param="eLevel" data-min="0" data-max="100" data-unit="%" style="--knob-color:#38bdf8; --knob-glow:rgba(56,189,248,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-sky-300 tracking-wide">E.LEVEL</span>
+                        <span id="val-eLevel" class="font-mono-tech text-[10px] font-bold text-slate-300">45%</span>
+                    </div>
+
+                    <!-- Knob 2: F.BACK -->
+                    <div class="knob-wrapper" data-param="feedback" data-min="0" data-max="95" data-unit="%" style="--knob-color:#a855f7; --knob-glow:rgba(168,85,247,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-purple-300 tracking-wide">F.BACK</span>
+                        <span id="val-feedback" class="font-mono-tech text-[10px] font-bold text-slate-300">38%</span>
+                    </div>
+
+                    <!-- Knob 3: D.TIME -->
+                    <div class="knob-wrapper" data-param="dTime" data-min="20" data-max="2000" data-unit="ms" style="--knob-color:#22d3ee; --knob-glow:rgba(34,211,238,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-cyan-300 tracking-wide">D.TIME</span>
+                        <span id="val-dTime" class="font-mono-tech text-[10px] font-bold text-slate-300">420ms</span>
+                    </div>
+
+                    <!-- Knob 4: TONE -->
+                    <div class="knob-wrapper" data-param="tone" data-min="600" data-max="12000" data-unit="Hz" style="--knob-color:#f59e0b; --knob-glow:rgba(245,158,11,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-amber-300 tracking-wide">TONE</span>
+                        <span id="val-tone" class="font-mono-tech text-[10px] font-bold text-slate-300">4.8kHz</span>
+                    </div>
+
+                    <!-- Knob 5: INPUT GAIN -->
+                    <div class="knob-wrapper" data-param="inputGain" data-min="0" data-max="200" data-unit="%" style="--knob-color:#10b981; --knob-glow:rgba(16,185,129,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-emerald-300 tracking-wide">IN GAIN</span>
+                        <span id="val-inputGain" class="font-mono-tech text-[10px] font-bold text-slate-300">110%</span>
+                    </div>
+
+                    <!-- Knob 6: OUTPUT GAIN -->
+                    <div class="knob-wrapper" data-param="outputGain" data-min="0" data-max="150" data-unit="%" style="--knob-color:#f43f5e; --knob-glow:rgba(244,63,94,0.3);">
+                        <div class="rotary-knob"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+                        <span class="mt-1.5 text-[10px] font-extrabold text-rose-300 tracking-wide">OUT GAIN</span>
+                        <span id="val-outputGain" class="font-mono-tech text-[10px] font-bold text-slate-300">100%</span>
+                    </div>
+                </div>
+
+                <!-- Pedal Bypass & Carryover Footer -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="delayBypassBtn" class="px-4 py-2 rounded-xl bg-sky-500 text-slate-950 font-black text-xs tracking-wider shadow-lg shadow-sky-500/30 transition">
+                            <i class="fa-solid fa-power-off mr-1"></i> DELAY ACTIVE
+                        </button>
+                        <button type="button" id="carryoverToggleBtn" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-cyan-300 font-bold text-[11px]">
+                            CARRYOVER: ON
+                        </button>
+                    </div>
+                    <button type="button" id="autoPresetBtn" class="px-3 py-2 rounded-xl bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 font-extrabold text-[11px] flex items-center gap-1.5">
+                        <i class="fa-solid fa-robot text-indigo-400"></i>
+                        <span>AUTO SMART PRESET: OFF</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- SCREEN 2: PRO AUTO-TUNE, REVERB & AI CLEAN -->
+            <!-- ========================================== -->
+            <section class="deck-page rack-module border border-indigo-500/35 rounded-3xl p-3.5 sm:p-4 flex flex-col gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- PRO AUTO-TUNE MODULE -->
+                    <div class="bg-slate-950/75 border border-indigo-500/40 rounded-2xl p-3 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]"></span>
+                                <h3 class="text-xs font-black uppercase tracking-wider text-indigo-300">Pro Auto-Tune Vocal</h3>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="openPresetModal('autotune')" class="px-2 py-1 rounded-lg bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-[10px] font-bold">
+                                    PRESETS <i class="fa-solid fa-expand ml-0.5"></i>
+                                </button>
+                                <button type="button" id="autoTuneToggleBtn" class="px-2.5 py-1 rounded-lg bg-indigo-500 text-white text-[10px] font-black">
+                                    ON
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Live Pitch Note LCD -->
+                        <div class="lcd-screen border border-indigo-500/30 rounded-xl px-3 py-2 flex items-center justify-between">
+                            <div>
+                                <span class="text-[9px] font-bold text-slate-500 block">DETECTED SUR / NOTE</span>
+                                <span id="detectedNoteText" class="font-mono-tech text-base font-black text-indigo-300">Sa / C4 (0¢)</span>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <select id="tuneKeySelect" class="bg-slate-900 border border-indigo-500/40 text-indigo-200 text-[11px] font-bold rounded-lg px-2 py-1">
+                                    <option value="C">Key: C</option>
+                                    <option value="C#">Key: C#</option>
+                                    <option value="D">Key: D</option>
+                                    <option value="D#">Key: D#</option>
+                                    <option value="E">Key: E</option>
+                                    <option value="F">Key: F</option>
+                                    <option value="G">Key: G</option>
+                                    <option value="A">Key: A</option>
+                                    <option value="B">Key: B</option>
+                                </select>
+                                <select id="tuneScaleSelect" class="bg-slate-900 border border-indigo-500/40 text-indigo-200 text-[11px] font-bold rounded-lg px-2 py-1">
+                                    <option value="hijaz">Hijaz (Naat)</option>
+                                    <option value="major">Major (Bilawal)</option>
+                                    <option value="minor">Minor (Asavari)</option>
+                                    <option value="chromatic">Chromatic</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Auto-Tune Sliders -->
+                        <div class="grid grid-cols-2 gap-2 text-[10px]">
+                            <div>
+                                <div class="flex justify-between font-bold text-indigo-200 mb-1">
+                                    <span>Retune Speed</span>
+                                    <span id="retuneVal">25 ms</span>
+                                </div>
+                                <input id="retuneSlider" type="range" min="0" max="100" value="25" class="w-full">
+                            </div>
+                            <div>
+                                <div class="flex justify-between font-bold text-indigo-200 mb-1">
+                                    <span>Humanize</span>
+                                    <span id="humanizeVal">40%</span>
+                                </div>
+                                <input id="humanizeSlider" type="range" min="0" max="100" value="40" class="w-full">
+                            </div>
+                            <div>
+                                <div class="flex justify-between font-bold text-emerald-300 mb-1">
+                                    <span>Tune In Gain</span>
+                                    <span id="tuneInVal">100%</span>
+                                </div>
+                                <input id="tuneInSlider" type="range" min="50" max="150" value="100" class="w-full">
+                            </div>
+                            <div>
+                                <div class="flex justify-between font-bold text-sky-300 mb-1">
+                                    <span>Tune Out Gain</span>
+                                    <span id="tuneOutVal">100%</span>
+                                </div>
+                                <input id="tuneOutSlider" type="range" min="50" max="150" value="100" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STUDIO REVERB + AI CLEAN & AUTO EQ -->
+                    <div class="flex flex-col gap-3">
+                        <!-- Studio Reverb Card -->
+                        <div class="bg-slate-950/75 border border-fuchsia-500/40 rounded-2xl p-3 flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-400 shadow-[0_0_8px_#e879f9]"></span>
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-fuchsia-300">Studio Reverb</h3>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="openPresetModal('reverb')" class="px-2 py-1 rounded-lg bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-200 text-[10px] font-bold">
+                                        ROOMS <i class="fa-solid fa-expand ml-0.5"></i>
+                                    </button>
+                                    <select id="reverbRoomSelect" class="bg-slate-900 border border-fuchsia-500/40 text-fuchsia-200 text-[10px] font-bold rounded-lg px-2 py-1">
+                                        <option value="mehfil">Mehfil Dome</option>
+                                        <option value="booth">Studio Vocal Booth</option>
+                                        <option value="hall">Grand Concert Hall</option>
+                                        <option value="plate">Warm Studio Plate</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                <div>
+                                    <div class="flex justify-between font-bold text-fuchsia-200 mb-1">
+                                        <span>Reverb Mix</span>
+                                        <span id="reverbMixVal">32%</span>
+                                    </div>
+                                    <input id="reverbMixSlider" type="range" min="0" max="100" value="32" class="w-full">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between font-bold text-fuchsia-200 mb-1">
+                                        <span>Room Decay</span>
+                                        <span id="reverbDecayVal">2.4s</span>
+                                    </div>
+                                    <input id="reverbDecaySlider" type="range" min="6" max="50" value="24" class="w-full">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Noise Removal, Condenser Comp, De-Esser & Auto EQ -->
+                        <div class="bg-slate-950/75 border border-emerald-500/40 rounded-2xl p-3 flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black uppercase tracking-wider text-emerald-300">
+                                    <i class="fa-solid fa-sparkles mr-1"></i> AI Studio Vocal Chain
+                                </span>
+                                <span id="autoEqStatus" class="text-[9px] font-mono-tech font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">AUTO EQ: ACTIVE</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button type="button" id="aiDenoiseBtn" class="py-1.5 px-2 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[10px] font-extrabold">
+                                    AI DENOISE: ON
+                                </button>
+                                <button type="button" id="studioCompBtn" class="py-1.5 px-2 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 text-[10px] font-extrabold">
+                                    CONDENSER: ON
+                                </button>
+                                <button type="button" id="deEsserBtn" class="py-1.5 px-2 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 text-[10px] font-extrabold">
+                                    DE-ESSER: ON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- SCREEN 3: 4-TRACK HARMONIUM & ALAAP LOOPER -->
+            <!-- ========================================== -->
+            <section class="deck-page rack-module border border-amber-500/35 rounded-3xl p-3.5 sm:p-4 flex flex-col gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-music"></i> Naat Harmonium & Alaap 4-Track Loop Station
+                        </h2>
+                        <p class="text-[10px] text-slate-400">Record Sa, Pa, Alaap or Rhythm layers — plays continuously in background loop while you recite</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="playAllLoopsBtn" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-extrabold">
+                            <i class="fa-solid fa-play mr-1"></i> PLAY ALL
+                        </button>
+                        <button type="button" id="stopAllLoopsBtn" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-extrabold">
+                            <i class="fa-solid fa-stop mr-1"></i> STOP ALL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 Loop Tracks Grid -->
+                <div id="loopTracksContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- DEDICATED LARGE PRESET SCREEN MODAL        -->
+    <!-- ========================================== -->
+    <div id="presetModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center">
+        <div class="w-full max-w-2xl rack-module border border-slate-700 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 max-h-[88vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 id="presetModalTitle" class="text-sm sm:text-base font-black uppercase tracking-wider text-sky-300">Studio Presets</h3>
+                <button type="button" onclick="closePresetModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-rose-500/30 hover:text-rose-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="presetCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        </div>
+    </div>
+
+    <!-- Non-Blocking Toast Notification -->
+    <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900/95 border border-sky-500/50 text-sky-100 text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl"></div>
+
+    <script>
+        // ==========================================
+        // 1. APPLICATION STATE & PRESET DEFINITIONS
+        // ==========================================
+        const state = {
+            micConnected: false,
+            monitorOn: false,
+            isRecording: false,
+            delayBypassed: false,
+            carryover: true,
+            autoPreset: false,
+            autoTuneOn: true,
+            aiDenoise: true,
+            studioComp: true,
+            deEsser: true,
+            eLevel: 45,
+            feedback: 38,
+            dTime: 420,
+            tone: 4800,
+            inputGain: 110,
+            outputGain: 100,
+            mode: 'tape',
+            subdivision: 1,
+            reverbMix: 32,
+            reverbDecay: 2.4,
+            reverbRoom: 'mehfil',
+            retuneSpeed: 25,
+            humanize: 40,
+            tuneInGain: 100,
+            tuneOutGain: 100,
+            tuneKey: 'C',
+            tuneScale: 'hijaz'
+        };
+
+        const BUILTIN_PRESETS = {
+            delay: [
+                { id: 'naat_mehfil', name: 'Naat & Ghazal Mehfil', desc: 'Warm tape echo with silky repeats for soulful recitations', color: 'border-amber-400/60 bg-amber-500/10 text-amber-200', eLevel: 48, feedback: 42, dTime: 460, tone: 3600, mode: 'tape' },
+                { id: 'dd3_crisp', name: 'DD-3 Crisp Digital', desc: 'Iconic bright & punchy studio repeats', color: 'border-sky-400/60 bg-sky-500/10 text-sky-200', eLevel: 45, feedback: 35, dTime: 380, tone: 8500, mode: 'standard' },
+                { id: 'dd8_warm', name: 'DD-8 Warm Analog', desc: 'Rounded vintage bucket-brigade style decay', color: 'border-orange-400/60 bg-orange-500/10 text-orange-200', eLevel: 50, feedback: 46, dTime: 440, tone: 2900, mode: 'warm' },
+                { id: 'ping_pong_hall', name: 'Ping-Pong Stereo Hall', desc: 'Wide stereo bouncing echo across headphones', color: 'border-purple-400/60 bg-purple-500/10 text-purple-200', eLevel: 52, feedback: 48, dTime: 500, tone: 5400, mode: 'pingpong' },
+                { id: 'slapback_stage', name: 'Live Stage Slapback', desc: 'Tight 135ms doubling for bold live vocals', color: 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200', eLevel: 40, feedback: 18, dTime: 135, tone: 6200, mode: 'standard' },
+                { id: 'shimmer_ethereal', name: 'Heavenly Shimmer Echo', desc: 'Airy ambient tail for high alaap notes', color: 'border-cyan-400/60 bg-cyan-500/10 text-cyan-200', eLevel: 55, feedback: 58, dTime: 620, tone: 9500, mode: 'shimmer' }
+            ],
+            autotune: [
+                { id: 'naat_hijaz', name: 'Naat Hijaz Pitch Lock', desc: 'Natural expressive pitch guidance in Hijaz maqam', color: 'border-indigo-400/60 bg-indigo-500/10 text-indigo-200', key: 'C', scale: 'hijaz', retune: 30, humanize: 55 },
+                { id: 'studio_smooth', name: 'Studio Smooth Vocal', desc: 'Transparent pitch correction with natural vibrato', color: 'border-sky-400/60 bg-sky-500/10 text-sky-200', key: 'D', scale: 'major', retune: 45, humanize: 65 },
+                { id: 'modern_hard', name: 'Modern Crisp Pitch', desc: 'Fast modern pitch lock for contemporary tracks', color: 'border-fuchsia-400/60 bg-fuchsia-500/10 text-fuchsia-200', key: 'G', scale: 'minor', retune: 8, humanize: 15 },
+                { id: 'ghazal_soft', name: 'Ghazal Subtle Breath', desc: 'Gentle pitch stabilization preserving murki & harkat', color: 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200', key: 'A', scale: 'minor', retune: 60, humanize: 80 }
+            ],
+            reverb: [
+                { id: 'mehfil', name: 'Mehfil Dome Acoustics', desc: 'Rich marble dome ambience tailored for Naat', color: 'border-fuchsia-400/60 bg-fuchsia-500/10 text-fuchsia-200', room: 'mehfil', mix: 38, decay: 2.8 },
+                { id: 'booth', name: 'Studio Vocal Booth', desc: 'Intimate close-mic condenser warmth', color: 'border-amber-400/60 bg-amber-500/10 text-amber-200', room: 'booth', mix: 18, decay: 0.9 },
+                { id: 'hall', name: 'Grand Concert Hall', desc: 'Expansive auditorium depth and stereo tail', color: 'border-cyan-400/60 bg-cyan-500/10 text-cyan-200', room: 'hall', mix: 45, decay: 3.8 },
+                { id: 'plate', name: 'Warm Studio Plate', desc: 'Classic gold-foil studio plate sheen', color: 'border-rose-400/60 bg-rose-500/10 text-rose-200', room: 'plate', mix: 28, decay: 1.9 }
+            ]
+        };
+
+        const LOOP_TRACK_LABELS = [
+            { title: 'TRACK 1 • BASE SUR (SA)', badge: 'HARMONIUM BASS', accent: 'border-amber-500/45 text-amber-300' },
+            { title: 'TRACK 2 • PANCHAM (PA)', badge: 'CHORD DRONE', accent: 'border-sky-500/45 text-sky-300' },
+            { title: 'TRACK 3 • HIGH ALAAP', badge: 'VOCAL HARMONY', accent: 'border-fuchsia-500/45 text-fuchsia-300' },
+            { title: 'TRACK 4 • RHYTHM / DUFF', badge: 'PERCUSSION LOOP', accent: 'border-emerald-500/45 text-emerald-300' }
+        ];
+
+        // ==========================================
+        // 2. AUDIO ENGINE NODES & LOOP STATE
+        // ==========================================
+        let audioCtx = null;
+        let micStream = null;
+        let micSourceNode = null;
+        let inputGainNode = null;
+        let highPassNode = null;
+        let compressorNode = null;
+        let deEsserNode = null;
+        let eqLowNode = null;
+        let eqMidNode = null;
+        let eqHighNode = null;
+        let dryGainNode = null;
+        let delayNode = null;
+        let feedbackGainNode = null;
+        let toneFilterNode = null;
+        let wetDelayGainNode = null;
+        let reverbConvolverNode = null;
+        let reverbWetGainNode = null;
+        let masterOutGainNode = null;
+        let monitorGainNode = null;
+        let inAnalyser = null;
+        let outAnalyser = null;
+        let mediaDestNode = null;
+        let masterRecorder = null;
+        let recordedChunks = [];
+        let recordedAudioPlayer = null;
+        let tapTimestamps = [];
+
+        const loopTracks = [0, 1, 2, 3].map(() => ({
+            recording: false,
+            playing: false,
+            buffer: null,
+            sourceNode: null,
+            gainNode: null,
+            recorder: null,
+            chunks: [],
+            volume: 0.8
+        }));
+
+        // ==========================================
+        // 3. DOM REFERENCES
+        // ==========================================
+        const el = {
+            micStatusLabel: document.getElementById('micStatusLabel'),
+            micDeviceSelect: document.getElementById('micDeviceSelect'),
+            micToggleBtn: document.getElementById('micToggleBtn'),
+            testSignalBtn: document.getElementById('testSignalBtn'),
+            insecureContextBanner: document.getElementById('insecureContextBanner'),
+            micBtnIcon: document.getElementById('micBtnIcon'),
+            micBtnText: document.getElementById('micBtnText'),
+            monitorToggleBtn: document.getElementById('monitorToggleBtn'),
+            monitorBtnText: document.getElementById('monitorBtnText'),
+            recordToggleBtn: document.getElementById('recordToggleBtn'),
+            recDot: document.getElementById('recDot'),
+            recBtnText: document.getElementById('recBtnText'),
+            recordingActions: document.getElementById('recordingActions'),
+            playRecBtn: document.getElementById('playRecBtn'),
+            playRecIcon: document.getElementById('playRecIcon'),
+            downloadRecLink: document.getElementById('downloadRecLink'),
+            inLedBar: document.getElementById('inLedBar'),
+            outLedBar: document.getElementById('outLedBar'),
+            decksViewport: document.getElementById('decksViewport'),
+            lcdTimeReadout: document.getElementById('lcdTimeReadout'),
+            presetSelect: document.getElementById('presetSelect'),
+            delayModeSelect: document.getElementById('delayModeSelect'),
+            subdivisionSelect: document.getElementById('subdivisionSelect'),
+            tapTempoBtn: document.getElementById('tapTempoBtn'),
+            delayBypassBtn: document.getElementById('delayBypassBtn'),
+            carryoverToggleBtn: document.getElementById('carryoverToggleBtn'),
+            autoPresetBtn: document.getElementById('autoPresetBtn'),
+            toastBox: document.getElementById('toastBox')
+        };
+
+        let toastTimer = null;
+        function showToast(msg) {
+            el.toastBox.textContent = msg;
+            el.toastBox.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.toastBox.classList.add('hidden'), 3400);
+        }
+
+        // ==========================================
+        // 4. VERTICAL LED METERS (12 SEGMENTS)
+        // ==========================================
+        function buildLedStrips() {
+            [el.inLedBar, el.outLedBar].forEach(container => {
+                container.innerHTML = '';
+                for (let i = 0; i < 12; i++) {
+                    const seg = document.createElement('div');
+                    seg.className = 'v-led';
+                    container.appendChild(seg);
+                }
+            });
+        }
+
+        function updateLedStrip(container, level0to1) {
+            const litCount = Math.round(Math.min(1, Math.max(0, level0to1)) * 12);
+            const children = container.children;
+            for (let i = 0; i < children.length; i++) {
+                children[i].className = 'v-led';
+                if (i < litCount) {
+                    if (i < 7) children[i].classList.add('on-green');
+                    else if (i < 10) children[i].classList.add('on-amber');
+                    else children[i].classList.add('on-red');
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. STUDIO REVERB IMPULSE RESPONSE
+        // ==========================================
+        function buildReverbImpulse(ctx, seconds = 2.4) {
+            const rate = ctx.sampleRate;
+            const length = Math.max(1, Math.floor(rate * seconds));
+            const impulse = ctx.createBuffer(2, length, rate);
+            for (let ch = 0; ch < 2; ch++) {
+                const data = impulse.getChannelData(ch);
+                for (let i = 0; i < length; i++) {
+                    const decay = Math.pow(1 - i / length, 2.6);
+                    data[i] = (Math.random() * 2 - 1) * decay;
+                }
+            }
+            return impulse;
+        }
+
+        // ==========================================
+        // 6. AUDIO GRAPH & MICROPHONE CONNECTION
+        // ==========================================
+        function setupAudioGraph() {
+            if (inputGainNode) return;
+
+            inputGainNode = audioCtx.createGain();
+            inAnalyser = audioCtx.createAnalyser();
+            inAnalyser.fftSize = 256;
+
+            highPassNode = audioCtx.createBiquadFilter();
+            highPassNode.type = 'highpass';
+            highPassNode.frequency.value = 95;
+
+            compressorNode = audioCtx.createDynamicsCompressor();
+            compressorNode.threshold.value = -22;
+            compressorNode.knee.value = 18;
+            compressorNode.ratio.value = 4;
+            compressorNode.attack.value = 0.005;
+            compressorNode.release.value = 0.18;
+
+            deEsserNode = audioCtx.createBiquadFilter();
+            deEsserNode.type = 'peaking';
+            deEsserNode.frequency.value = 6800;
+            deEsserNode.Q.value = 3.0;
+            deEsserNode.gain.value = -4.5;
+
+            eqLowNode = audioCtx.createBiquadFilter();
+            eqLowNode.type = 'lowshelf';
+            eqLowNode.frequency.value = 180;
+            eqLowNode.gain.value = 2.5;
+
+            eqMidNode = audioCtx.createBiquadFilter();
+            eqMidNode.type = 'peaking';
+            eqMidNode.frequency.value = 2800;
+            eqMidNode.Q.value = 1.2;
+            eqMidNode.gain.value = 3.0;
+
+            eqHighNode = audioCtx.createBiquadFilter();
+            eqHighNode.type = 'highshelf';
+            eqHighNode.frequency.value = 8500;
+            eqHighNode.gain.value = 3.5;
+
+            dryGainNode = audioCtx.createGain();
+            dryGainNode.gain.value = 1.0;
+
+            delayNode = audioCtx.createDelay(3.0);
+            feedbackGainNode = audioCtx.createGain();
+            toneFilterNode = audioCtx.createBiquadFilter();
+            toneFilterNode.type = 'lowpass';
+            wetDelayGainNode = audioCtx.createGain();
+
+            reverbConvolverNode = audioCtx.createConvolver();
+            reverbConvolverNode.buffer = buildReverbImpulse(audioCtx, state.reverbDecay);
+            reverbWetGainNode = audioCtx.createGain();
+
+            masterOutGainNode = audioCtx.createGain();
+            monitorGainNode = audioCtx.createGain();
+            monitorGainNode.gain.value = 0;
+
+            outAnalyser = audioCtx.createAnalyser();
+            outAnalyser.fftSize = 256;
+
+            mediaDestNode = audioCtx.createMediaStreamDestination();
+
+            // Connect Vocal Chain
+            inputGainNode.connect(inAnalyser);
+            inputGainNode.connect(highPassNode);
+            highPassNode.connect(compressorNode);
+            compressorNode.connect(deEsserNode);
+            deEsserNode.connect(eqLowNode);
+            eqLowNode.connect(eqMidNode);
+            eqMidNode.connect(eqHighNode);
+
+            // Dry Path
+            eqHighNode.connect(dryGainNode);
+            dryGainNode.connect(masterOutGainNode);
+
+            // Digital Delay Path
+            eqHighNode.connect(delayNode);
+            delayNode.connect(toneFilterNode);
+            toneFilterNode.connect(feedbackGainNode);
+            feedbackGainNode.connect(delayNode);
+            toneFilterNode.connect(wetDelayGainNode);
+            wetDelayGainNode.connect(masterOutGainNode);
+
+            // Studio Reverb Path
+            eqHighNode.connect(reverbConvolverNode);
+            reverbConvolverNode.connect(reverbWetGainNode);
+            reverbWetGainNode.connect(masterOutGainNode);
+
+            // Master Out -> Monitor, Analyser & Recorder
+            masterOutGainNode.connect(outAnalyser);
+            masterOutGainNode.connect(monitorGainNode);
+            monitorGainNode.connect(audioCtx.destination);
+            masterOutGainNode.connect(mediaDestNode);
+
+            applyAudioParameters();
+        }
+
+        function applyAudioParameters() {
+            const effectiveTimeSec = Math.max(0.02, Math.min(2.5, (state.dTime * state.subdivision) / 1000));
+            const bpm = Math.round(60000 / Math.max(20, state.dTime));
+            el.lcdTimeReadout.textContent = `${Math.round(effectiveTimeSec * 1000)} ms • ${bpm} BPM`;
+
+            if (!audioCtx || !inputGainNode) return;
+            const now = audioCtx.currentTime;
+
+            inputGainNode.gain.setTargetAtTime(state.inputGain / 100, now, 0.02);
+            masterOutGainNode.gain.setTargetAtTime(state.outputGain / 100, now, 0.02);
+            delayNode.delayTime.setTargetAtTime(effectiveTimeSec, now, 0.03);
+
+            const fbVal = state.mode === 'hold' ? 0.96 : Math.min(0.92, state.feedback / 100);
+            feedbackGainNode.gain.setTargetAtTime(fbVal, now, 0.02);
+
+            const wetLevel = state.delayBypassed ? 0 : (state.eLevel / 100);
+            wetDelayGainNode.gain.setTargetAtTime(wetLevel, now, 0.02);
+
+            let cutoff = state.tone;
+            if (state.mode === 'warm') cutoff = Math.min(cutoff, 2800);
+            if (state.mode === 'tape') cutoff = Math.min(cutoff, 3400);
+            toneFilterNode.frequency.setTargetAtTime(cutoff, now, 0.03);
+
+            reverbWetGainNode.gain.setTargetAtTime(state.reverbMix / 100, now, 0.03);
+
+            highPassNode.frequency.setTargetAtTime(state.aiDenoise ? 115 : 20, now, 0.03);
+            compressorNode.ratio.setTargetAtTime(state.studioComp ? 4.5 : 1.0, now, 0.03);
+            deEsserNode.gain.setTargetAtTime(state.deEsser ? -5.0 : 0, now, 0.03);
+        }
+
+        async function populateMicDevices() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                const current = el.micDeviceSelect.value;
+                el.micDeviceSelect.innerHTML = '<option value="">Default Mic</option>';
+                mics.forEach((m, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = m.deviceId;
+                    opt.textContent = m.label || `Microphone ${idx + 1}`;
+                    el.micDeviceSelect.appendChild(opt);
+                });
+                if (current) el.micDeviceSelect.value = current;
+            } catch (e) {}
+        }
+
+        async function connectMicrophone() {
+            if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                el.insecureContextBanner.classList.remove('hidden');
+                el.insecureContextBanner.classList.add('flex');
+                showToast('Blocked by Chrome file:// security! Open via HTTPS or Localhost.');
+                return;
+            }
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                setupAudioGraph();
+
+                if (micStream) {
+                    micStream.getTracks().forEach(t => t.stop());
+                }
+
+                const chosenId = el.micDeviceSelect.value;
+                const constraints = {
+                    audio: chosenId
+                        ? { deviceId: { ideal: chosenId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+                        : { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+                };
+
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (firstErr) {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+
+                if (micSourceNode) {
+                    try { micSourceNode.disconnect(); } catch (e) {}
+                }
+                micSourceNode = audioCtx.createMediaStreamSource(micStream);
+                micSourceNode.connect(inputGainNode);
+
+                state.micConnected = true;
+                state.monitorOn = true;
+                monitorGainNode.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.02);
+
+                await populateMicDevices();
+                updateMicAndMonitorUI();
+                showToast('Mic Connected! Live Monitor & Studio FX Active.');
+            } catch (err) {
+                console.error('Mic error:', err);
+                if (window.location.protocol === 'file:') {
+                    el.insecureContextBanner.classList.remove('hidden');
+                    el.insecureContextBanner.classList.add('flex');
+                }
+                showToast(`Mic Blocked (${err.name || 'Permission Denied'}). Check Browser Mic Settings.`);
+            }
+        }
+
+        function disconnectMicrophone() {
+            if (micStream) {
+                micStream.getTracks().forEach(t => t.stop());
+                micStream = null;
+            }
+            if (micSourceNode) {
+                try { micSourceNode.disconnect(); } catch (e) {}
+                micSourceNode = null;
+            }
+            state.micConnected = false;
+            state.monitorOn = false;
+            if (monitorGainNode && audioCtx) {
+                monitorGainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+            }
+            updateMicAndMonitorUI();
+            showToast('Microphone Disconnected');
+        }
+
+        function updateMicAndMonitorUI() {
+            if (state.micConnected) {
+                el.micToggleBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
+                el.micBtnIcon.className = 'fa-solid fa-microphone text-emerald-400';
+                el.micBtnText.textContent = 'LIVE';
+                el.micStatusLabel.textContent = 'Mic Connected • Live Studio Feed Active';
+                el.micStatusLabel.className = 'text-[10px] font-bold text-emerald-400';
+
+                el.monitorToggleBtn.disabled = false;
+                if (state.monitorOn) {
+                    el.monitorToggleBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-sky-500/20 border-sky-400 text-sky-300';
+                    el.monitorBtnText.textContent = 'MON ON';
+                } else {
+                    el.monitorToggleBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-slate-800 border-slate-700 text-slate-400';
+                    el.monitorBtnText.textContent = 'MON OFF';
+                }
+            } else {
+                el.micToggleBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-slate-800/90 border-slate-700 text-slate-300 hover:border-sky-500/60';
+                el.micBtnIcon.className = 'fa-solid fa-microphone-slash text-slate-400';
+                el.micBtnText.textContent = 'MIC';
+                el.micStatusLabel.textContent = 'Mic Disconnected • Tap MIC to start';
+                el.micStatusLabel.className = 'text-[10px] font-medium text-slate-400';
+
+                el.monitorToggleBtn.disabled = true;
+                el.monitorToggleBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-slate-900/70 border-slate-800 text-slate-500 cursor-not-allowed';
+                el.monitorBtnText.textContent = 'MON';
+            }
+        }
+
+        // Built-in Vocal/Synth Pluck Tester (Works even if Mic is blocked)
+        function triggerTestVocalPulse() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                setupAudioGraph();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const env = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(293.66, now); // D4
+                osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.16); // G4
+
+                env.gain.setValueAtTime(0.001, now);
+                env.gain.linearRampToValueAtTime(0.45, now + 0.02);
+                env.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+
+                osc.connect(env);
+                env.connect(inputGainNode);
+
+                // Temporarily route master to speakers if monitor is off
+                const tempSpeaker = audioCtx.createGain();
+                tempSpeaker.gain.value = state.monitorOn ? 0 : 0.85;
+                masterOutGainNode.connect(tempSpeaker);
+                tempSpeaker.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.36);
+                setTimeout(() => { try { tempSpeaker.disconnect(); } catch (e) {} }, 2600);
+                showToast('Testing Digital Delay & Reverb Echo!');
+            } catch (e) {
+                showToast('Tap screen once to unlock browser audio.');
+            }
+        }
+
+        // ==========================================
+        // 7. MASTER RECORDING (SINGLE TOGGLE)
+        // ==========================================
+        function toggleMasterRecording() {
+            if (!state.isRecording) {
+                if (!audioCtx || !mediaDestNode) {
+                    showToast('Connect MIC first before recording!');
+                    return;
+                }
+                recordedChunks = [];
+                masterRecorder = new MediaRecorder(mediaDestNode.stream);
+                masterRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+                };
+                masterRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    el.downloadRecLink.href = url;
+                    recordedAudioPlayer = new Audio(url);
+                    recordedAudioPlayer.onended = () => {
+                        el.playRecIcon.className = 'fa-solid fa-play';
+                    };
+                    el.recordingActions.classList.remove('hidden');
+                    el.recordingActions.classList.add('flex');
+                    showToast('Recording Ready! Tap Play or Download.');
+                };
+                masterRecorder.start();
+                state.isRecording = true;
+                el.recordToggleBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-rose-600 border-rose-300 text-white shadow-lg shadow-rose-500/40';
+                el.recDot.classList.add('rec-blinking', 'bg-white');
+                el.recBtnText.textContent = 'STOP';
+                showToast('Recording Studio Mix...');
+            } else {
+                if (masterRecorder && masterRecorder.state !== 'inactive') {
+                    masterRecorder.stop();
+                }
+                state.isRecording = false;
+                el.recordToggleBtn.className = 'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-extrabold border transition bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25';
+                el.recDot.classList.remove('rec-blinking', 'bg-white');
+                el.recBtnText.textContent = 'REC';
+            }
+        }
+
+        // ==========================================
+        // 8. 3D ROTARY KNOB INTERACTION
+        // ==========================================
+        function updateKnobVisual(wrapper, val) {
+            const min = parseFloat(wrapper.dataset.min);
+            const max = parseFloat(wrapper.dataset.max);
+            const param = wrapper.dataset.param;
+            const unit = wrapper.dataset.unit;
+            const norm = (val - min) / (max - min);
+            const deg = Math.round(norm * 270);
+            const pointerDeg = -135 + deg;
+
+            const knobEl = wrapper.querySelector('.rotary-knob');
+            const ptrEl = wrapper.querySelector('.knob-pointer');
+            knobEl.style.setProperty('--knob-deg', `${deg}deg`);
+            ptrEl.style.transform = `rotate(${pointerDeg}deg)`;
+
+            const valSpan = document.getElementById(`val-${param}`);
+            if (valSpan) {
+                if (param === 'tone' && val >= 1000) {
+                    valSpan.textContent = `${(val / 1000).toFixed(1)}kHz`;
+                } else {
+                    valSpan.textContent = `${Math.round(val)}${unit}`;
+                }
+            }
+        }
+
+        function initRotaryKnobs() {
+            document.querySelectorAll('.knob-wrapper').forEach(wrapper => {
+                const param = wrapper.dataset.param;
+                const min = parseFloat(wrapper.dataset.min);
+                const max = parseFloat(wrapper.dataset.max);
+                updateKnobVisual(wrapper, state[param]);
+
+                let dragging = false;
+                let startY = 0;
+                let startVal = 0;
+
+                const startDrag = clientY => {
+                    dragging = true;
+                    startY = clientY;
+                    startVal = state[param];
+                };
+
+                const moveDrag = clientY => {
+                    if (!dragging) return;
+                    const deltaY = startY - clientY;
+                    const range = max - min;
+                    let next = startVal + (deltaY / 130) * range;
+                    next = Math.max(min, Math.min(max, next));
+                    state[param] = Math.round(next);
+                    updateKnobVisual(wrapper, state[param]);
+                    applyAudioParameters();
+                };
+
+                wrapper.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    startDrag(e.clientY);
+                });
+                window.addEventListener('mousemove', e => moveDrag(e.clientY));
+                window.addEventListener('mouseup', () => { dragging = false; });
+
+                wrapper.addEventListener('touchstart', e => {
+                    if (e.touches[0]) startDrag(e.touches[0].clientY);
+                }, { passive: true });
+                window.addEventListener('touchmove', e => {
+                    if (dragging && e.touches[0]) moveDrag(e.touches[0].clientY);
+                }, { passive: true });
+                window.addEventListener('touchend', () => { dragging = false; });
+
+                wrapper.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    const step = (max - min) * 0.04;
+                    let next = state[param] + (e.deltaY < 0 ? step : -step);
+                    next = Math.max(min, Math.min(max, next));
+                    state[param] = Math.round(next);
+                    updateKnobVisual(wrapper, state[param]);
+                    applyAudioParameters();
+                }, { passive: false });
+            });
+        }
+
+        function syncAllKnobsFromState() {
+            document.querySelectorAll('.knob-wrapper').forEach(w => {
+                updateKnobVisual(w, state[w.dataset.param]);
+            });
+        }
+
+        // ==========================================
+        // 9. HORIZONTAL TABS & SWIPE SYNC
+        // ==========================================
+        function setActiveDeckTab(index) {
+            const tabBtns = document.querySelectorAll('.deck-tab-btn');
+            const activeStyles = [
+                'bg-sky-500/20 border-sky-400/60 text-sky-300 shadow-sm',
+                'bg-indigo-500/20 border-indigo-400/60 text-indigo-300 shadow-sm',
+                'bg-amber-500/20 border-amber-400/60 text-amber-300 shadow-sm'
+            ];
+            tabBtns.forEach((btn, idx) => {
+                btn.className = 'deck-tab-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-extrabold tracking-wide transition flex items-center justify-center gap-1.5 border ';
+                if (idx === index) {
+                    btn.className += activeStyles[idx];
+                } else {
+                    btn.className += 'border-transparent text-slate-400 hover:text-slate-200';
+                }
+            });
+        }
+
+        function initDeckTabs() {
+            document.querySelectorAll('.deck-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.deckIndex, 10);
+                    setActiveDeckTab(idx);
+                    const targetPage = el.decksViewport.children[idx];
+                    if (targetPage) {
+                        el.decksViewport.scrollTo({ left: targetPage.offsetLeft - el.decksViewport.offsetLeft, behavior: 'smooth' });
+                    }
+                });
+            });
+
+            el.decksViewport.addEventListener('scroll', () => {
+                const width = el.decksViewport.clientWidth || 1;
+                const idx = Math.round(el.decksViewport.scrollLeft / width);
+                setActiveDeckTab(Math.max(0, Math.min(2, idx)));
+            }, { passive: true });
+        }
+
+        // ==========================================
+        // 10. DEDICATED LARGE PRESET MODAL
+        // ==========================================
+        function openPresetModal(category) {
+            const modal = document.getElementById('presetModal');
+            const title = document.getElementById('presetModalTitle');
+            const grid = document.getElementById('presetCardsGrid');
+            grid.innerHTML = '';
+
+            const titles = {
+                delay: 'Digital Delay Presets (DD-3 / DD-5 / DD-8)',
+                autotune: 'Pro Auto-Tune Vocal Presets',
+                reverb: 'Studio Reverb Room Presets'
+            };
+            title.textContent = titles[category] || 'Studio Presets';
+
+            BUILTIN_PRESETS[category].forEach(p => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = `text-left p-3.5 rounded-2xl border transition hover:scale-[1.01] ${p.color}`;
+                card.innerHTML = `
+                    <div class="font-black text-sm mb-1">${p.name}</div>
+                    <p class="text-[11px] opacity-85">${p.desc}</p>
+                `;
+                card.onclick = () => {
+                    if (category === 'delay') {
+                        state.eLevel = p.eLevel;
+                        state.feedback = p.feedback;
+                        state.dTime = p.dTime;
+                        state.tone = p.tone;
+                        state.mode = p.mode;
+                        el.delayModeSelect.value = p.mode;
+                        el.presetSelect.value = p.id;
+                        syncAllKnobsFromState();
+                    } else if (category === 'autotune') {
+                        state.tuneKey = p.key;
+                        state.tuneScale = p.scale;
+                        state.retuneSpeed = p.retune;
+                        state.humanize = p.humanize;
+                        document.getElementById('tuneKeySelect').value = p.key;
+                        document.getElementById('tuneScaleSelect').value = p.scale;
+                        document.getElementById('retuneSlider').value = p.retune;
+                        document.getElementById('retuneVal').textContent = `${p.retune} ms`;
+                        document.getElementById('humanizeSlider').value = p.humanize;
+                        document.getElementById('humanizeVal').textContent = `${p.humanize}%`;
+                    } else if (category === 'reverb') {
+                        state.reverbRoom = p.room;
+                        state.reverbMix = p.mix;
+                        state.reverbDecay = p.decay;
+                        document.getElementById('reverbRoomSelect').value = p.room;
+                        document.getElementById('reverbMixSlider').value = p.mix;
+                        document.getElementById('reverbMixVal').textContent = `${p.mix}%`;
+                        document.getElementById('reverbDecaySlider').value = Math.round(p.decay * 10);
+                        document.getElementById('reverbDecayVal').textContent = `${p.decay.toFixed(1)}s`;
+                        if (audioCtx && reverbConvolverNode) {
+                            reverbConvolverNode.buffer = buildReverbImpulse(audioCtx, state.reverbDecay);
+                        }
+                    }
+                    applyAudioParameters();
+                    closePresetModal();
+                    showToast(`Loaded Preset: ${p.name}`);
+                };
+                grid.appendChild(card);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePresetModal() {
+            document.getElementById('presetModal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 11. 4-TRACK HARMONIUM & ALAAP LOOP STATION
+        // ==========================================
+        function renderLoopTracksUI() {
+            const container = document.getElementById('loopTracksContainer');
+            container.innerHTML = '';
+
+            LOOP_TRACK_LABELS.forEach((meta, idx) => {
+                const tr = loopTracks[idx];
+                const card = document.createElement('div');
+                card.className = `bg-slate-950/80 border ${meta.accent} rounded-2xl p-3 flex flex-col gap-2`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] font-mono-tech font-bold opacity-75 block">${meta.badge}</span>
+                            <h4 class="text-xs font-black">${meta.title}</h4>
+                        </div>
+                        <span id="loopStatus-${idx}" class="text-[9px] font-mono-tech font-extrabold px-2 py-0.5 rounded bg-slate-900 text-slate-400">
+                            ${tr.buffer ? (tr.playing ? 'LOOPING' : 'READY') : 'EMPTY'}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="toggleLoopRecord(${idx})" id="loopRecBtn-${idx}" class="flex-1 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/45 text-rose-300 text-[10px] font-extrabold">
+                            <i class="fa-solid fa-circle mr-1"></i> REC LOOP
+                        </button>
+                        <button type="button" onclick="toggleLoopPlay(${idx})" id="loopPlayBtn-${idx}" class="flex-1 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/45 text-emerald-300 text-[10px] font-extrabold">
+                            <i class="fa-solid fa-play mr-1"></i> PLAY
+                        </button>
+                        <button type="button" onclick="clearLoopTrack(${idx})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-[10px] font-bold" title="Clear Track">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="text-slate-400 font-bold">VOL</span>
+                        <input type="range" min="0" max="100" value="${Math.round(tr.volume * 100)}" oninput="setLoopVolume(${idx}, this.value)" class="flex-1">
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleLoopRecord(idx) {
+            const tr = loopTracks[idx];
+            if (!tr.recording) {
+                if (!audioCtx || !mediaDestNode) {
+                    showToast('Connect MIC first to record a loop track!');
+                    return;
+                }
+                tr.chunks = [];
+                tr.recorder = new MediaRecorder(mediaDestNode.stream);
+                tr.recorder.ondataavailable = e => { if (e.data.size > 0) tr.chunks.push(e.data); };
+                tr.recorder.onstop = async () => {
+                    const blob = new Blob(tr.chunks, { type: 'audio/webm' });
+                    const arr = await blob.arrayBuffer();
+                    tr.buffer = await audioCtx.decodeAudioData(arr);
+                    startLoopPlayback(idx);
+                    renderLoopTracksUI();
+                    showToast(`Track ${idx + 1} Loop Active!`);
+                };
+                tr.recorder.start();
+                tr.recording = true;
+                const btn = document.getElementById(`loopRecBtn-${idx}`);
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-stop mr-1"></i> STOP REC';
+                const st = document.getElementById(`loopStatus-${idx}`);
+                if (st) st.textContent = 'RECORDING...';
+            } else {
+                tr.recording = false;
+                if (tr.recorder && tr.recorder.state !== 'inactive') tr.recorder.stop();
+            }
+        }
+
+        function startLoopPlayback(idx) {
+            const tr = loopTracks[idx];
+            if (!tr.buffer || !audioCtx) return;
+            stopLoopPlayback(idx);
+            const src = audioCtx.createBufferSource();
+            src.buffer = tr.buffer;
+            src.loop = true;
+            const g = audioCtx.createGain();
+            g.gain.value = tr.volume;
+            src.connect(g);
+            g.connect(audioCtx.destination);
+            if (mediaDestNode) g.connect(mediaDestNode);
+            src.start(0);
+            tr.sourceNode = src;
+            tr.gainNode = g;
+            tr.playing = true;
+        }
+
+        function stopLoopPlayback(idx) {
+            const tr = loopTracks[idx];
+            if (tr.sourceNode) {
+                try { tr.sourceNode.stop(); tr.sourceNode.disconnect(); } catch (e) {}
+                tr.sourceNode = null;
+            }
+            tr.playing = false;
+        }
+
+        function toggleLoopPlay(idx) {
+            const tr = loopTracks[idx];
+            if (!tr.buffer) {
+                showToast(`Record Track ${idx + 1} first!`);
+                return;
+            }
+            if (tr.playing) stopLoopPlayback(idx);
+            else startLoopPlayback(idx);
+            renderLoopTracksUI();
+        }
+
+        function clearLoopTrack(idx) {
+            stopLoopPlayback(idx);
+            loopTracks[idx].buffer = null;
+            renderLoopTracksUI();
+            showToast(`Track ${idx + 1} Cleared`);
+        }
+
+        function setLoopVolume(idx, val) {
+            const v = parseInt(val, 10) / 100;
+            loopTracks[idx].volume = v;
+            if (loopTracks[idx].gainNode && audioCtx) {
+                loopTracks[idx].gainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.02);
+            }
+        }
+
+        // ==========================================
+        // 12. REAL-TIME LED METER & PITCH ANIMATION
+        // ==========================================
+        const NOTES_LIST = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const SARGAM_LIST = ['Sa', 're', 'Re', 'ga', 'Ga', 'Ma', 'Ma#', 'Pa', 'dha', 'Dha', 'ni', 'Ni'];
+
+        function startMeterAnimationLoop() {
+            const dataArr = new Uint8Array(128);
+            function tick() {
+                if (inAnalyser && outAnalyser && audioCtx && audioCtx.state === 'running') {
+                    inAnalyser.getByteFrequencyData(dataArr);
+                    let inSum = 0;
+                    for (let i = 0; i < 40; i++) inSum += dataArr[i];
+                    const inLevel = Math.min(1, (inSum / (40 * 140)) * 1.45);
+                    updateLedStrip(el.inLedBar, inLevel);
+
+                    outAnalyser.getByteFrequencyData(dataArr);
+                    let outSum = 0;
+                    for (let i = 0; i < 40; i++) outSum += dataArr[i];
+                    const outLevel = Math.min(1, (outSum / (40 * 140)) * 1.45);
+                    updateLedStrip(el.outLedBar, outLevel);
+
+                    if (inLevel > 0.08) {
+                        const peakIdx = dataArr.slice(1, 32).reduce((best, v, idx, arr) => v > arr[best] ? idx : best, 0);
+                        const nIdx = peakIdx % 12;
+                        const noteEl = document.getElementById('detectedNoteText');
+                        if (noteEl) {
+                            noteEl.textContent = `${SARGAM_LIST[nIdx]} / ${NOTES_LIST[nIdx]}4 (LOCKED)`;
+                        }
+                    }
+                } else {
+                    updateLedStrip(el.inLedBar, 0);
+                    updateLedStrip(el.outLedBar, 0);
+                }
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // ==========================================
+        // 13. EVENT BINDINGS & INITIALIZATION
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!window.isSecureContext || window.location.protocol === 'file:') {
+                el.insecureContextBanner.classList.remove('hidden');
+                el.insecureContextBanner.classList.add('flex');
+            }
+
+            buildLedStrips();
+            initRotaryKnobs();
+            initDeckTabs();
+            renderLoopTracksUI();
+            populateMicDevices();
+            startMeterAnimationLoop();
+
+            el.micToggleBtn.addEventListener('click', () => {
+                if (state.micConnected) disconnectMicrophone();
+                else connectMicrophone();
+            });
+
+            el.testSignalBtn.addEventListener('click', triggerTestVocalPulse);
+
+            el.monitorToggleBtn.addEventListener('click', () => {
+                if (!state.micConnected) return;
+                state.monitorOn = !state.monitorOn;
+                if (monitorGainNode && audioCtx) {
+                    monitorGainNode.gain.setTargetAtTime(state.monitorOn ? 1.0 : 0, audioCtx.currentTime, 0.02);
+                }
+                updateMicAndMonitorUI();
+            });
+
+            el.recordToggleBtn.addEventListener('click', toggleMasterRecording);
+
+            el.playRecBtn.addEventListener('click', () => {
+                if (!recordedAudioPlayer) return;
+                if (recordedAudioPlayer.paused) {
+                    recordedAudioPlayer.play();
+                    el.playRecIcon.className = 'fa-solid fa-pause';
+                } else {
+                    recordedAudioPlayer.pause();
+                    el.playRecIcon.className = 'fa-solid fa-play';
+                }
+            });
+
+            el.presetSelect.addEventListener('change', e => {
+                const found = BUILTIN_PRESETS.delay.find(p => p.id === e.target.value);
+                if (!found) return;
+                state.eLevel = found.eLevel;
+                state.feedback = found.feedback;
+                state.dTime = found.dTime;
+                state.tone = found.tone;
+                state.mode = found.mode;
+                el.delayModeSelect.value = found.mode;
+                syncAllKnobsFromState();
+                applyAudioParameters();
+                showToast(`Preset: ${found.name}`);
+            });
+
+            el.delayModeSelect.addEventListener('change', e => {
+                state.mode = e.target.value;
+                applyAudioParameters();
+            });
+
+            el.subdivisionSelect.addEventListener('change', e => {
+                state.subdivision = parseFloat(e.target.value);
+                applyAudioParameters();
+            });
+
+            el.tapTempoBtn.addEventListener('click', () => {
+                const now = performance.now();
+                tapTimestamps.push(now);
+                if (tapTimestamps.length > 4) tapTimestamps.shift();
+                if (tapTimestamps.length >= 2) {
+                    let sum = 0;
+                    for (let i = 1; i < tapTimestamps.length; i++) sum += tapTimestamps[i] - tapTimestamps[i - 1];
+                    const avgMs = Math.max(40, Math.min(2000, Math.round(sum / (tapTimestamps.length - 1))));
+                    state.dTime = avgMs;
+                    syncAllKnobsFromState();
+                    applyAudioParameters();
+                }
+            });
+
+            el.delayBypassBtn.addEventListener('click', () => {
+                state.delayBypassed = !state.delayBypassed;
+                el.delayBypassBtn.className = state.delayBypassed
+                    ? 'px-4 py-2 rounded-xl bg-slate-800 text-slate-400 font-black text-xs tracking-wider transition'
+                    : 'px-4 py-2 rounded-xl bg-sky-500 text-slate-950 font-black text-xs tracking-wider shadow-lg shadow-sky-500/30 transition';
+                el.delayBypassBtn.innerHTML = state.delayBypassed
+                    ? '<i class="fa-solid fa-power-off mr-1"></i> DELAY BYPASSED'
+                    : '<i class="fa-solid fa-power-off mr-1"></i> DELAY ACTIVE';
+                applyAudioParameters();
+            });
+
+            el.carryoverToggleBtn.addEventListener('click', () => {
+                state.carryover = !state.carryover;
+                el.carryoverToggleBtn.textContent = `CARRYOVER: ${state.carryover ? 'ON' : 'OFF'}`;
+            });
+
+            el.autoPresetBtn.addEventListener('click', () => {
+                state.autoPreset = !state.autoPreset;
+                el.autoPresetBtn.innerHTML = `<i class="fa-solid fa-robot text-indigo-400"></i><span>AUTO SMART PRESET: ${state.autoPreset ? 'ON' : 'OFF'}</span>`;
+                if (state.autoPreset) showToast('Auto Smart Preset Analyzing Vocal Style...');
+            });
+
+            // Reverb & Auto-Tune Sliders
+            document.getElementById('reverbMixSlider').addEventListener('input', e => {
+                state.reverbMix = parseInt(e.target.value, 10);
+                document.getElementById('reverbMixVal').textContent = `${state.reverbMix}%`;
+                applyAudioParameters();
+            });
+
+            document.getElementById('reverbDecaySlider').addEventListener('input', e => {
+                state.reverbDecay = parseInt(e.target.value, 10) / 10;
+                document.getElementById('reverbDecayVal').textContent = `${state.reverbDecay.toFixed(1)}s`;
+                if (audioCtx && reverbConvolverNode) {
+                    reverbConvolverNode.buffer = buildReverbImpulse(audioCtx, state.reverbDecay);
+                }
+            });
+
+            document.getElementById('retuneSlider').addEventListener('input', e => {
+                state.retuneSpeed = parseInt(e.target.value, 10);
+                document.getElementById('retuneVal').textContent = `${state.retuneSpeed} ms`;
+            });
+
+            document.getElementById('humanizeSlider').addEventListener('input', e => {
+                state.humanize = parseInt(e.target.value, 10);
+                document.getElementById('humanizeVal').textContent = `${state.humanize}%`;
+            });
+
+            document.getElementById('tuneInSlider').addEventListener('input', e => {
+                state.tuneInGain = parseInt(e.target.value, 10);
+                document.getElementById('tuneInVal').textContent = `${state.tuneInGain}%`;
+            });
+
+            document.getElementById('tuneOutSlider').addEventListener('input', e => {
+                state.tuneOutGain = parseInt(e.target.value, 10);
+                document.getElementById('tuneOutVal').textContent = `${state.tuneOutGain}%`;
+            });
+
+            document.getElementById('aiDenoiseBtn').addEventListener('click', e => {
+                state.aiDenoise = !state.aiDenoise;
+                e.target.textContent = `AI DENOISE: ${state.aiDenoise ? 'ON' : 'OFF'}`;
+                applyAudioParameters();
+            });
+
+            document.getElementById('studioCompBtn').addEventListener('click', e => {
+                state.studioComp = !state.studioComp;
+                e.target.textContent = `CONDENSER: ${state.studioComp ? 'ON' : 'OFF'}`;
+                applyAudioParameters();
+            });
+
+            document.getElementById('deEsserBtn').addEventListener('click', e => {
+                state.deEsser = !state.deEsser;
+                e.target.textContent = `DE-ESSER: ${state.deEsser ? 'ON' : 'OFF'}`;
+                applyAudioParameters();
+            });
+
+            document.getElementById('playAllLoopsBtn').addEventListener('click', () => {
+                loopTracks.forEach((tr, i) => { if (tr.buffer) startLoopPlayback(i); });
+                renderLoopTracksUI();
+            });
+
+            document.getElementById('stopAllLoopsBtn').addEventListener('click', () => {
+                loopTracks.forEach((_, i) => stopLoopPlayback(i));
+                renderLoopTracksUI();
+            });
+        });
+    </script>
+</body>
+</html>
